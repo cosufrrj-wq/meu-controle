@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Controle - Charles & Roberta</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0f172a">
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+</script>
+<style>
+*{box-sizing:border-box;font-family:system-ui,sans-serif}
+body{margin:0;background:#0f172a;color:white;padding:16px;padding-bottom:140px}
+h1{font-size:22px;margin:0}
+.card{background:#1e293b;border-radius:16px;padding:16px;margin-top:16px}
+.saldo{font-size:34px;font-weight:800;color:#22c55e}
+.barra{height:10px;background:#334155;border-radius:99px;overflow:hidden;margin-top:10px}
+.preenchimento{height:100%;background:#22c55e}
+input,select{width:100%;padding:13px;border-radius:12px;border:1px solid #334155;background:#0f172a;color:white;margin-top:10px;font-size:15px}
+label{font-size:12px;opacity:.7;margin-top:12px;display:block}
+button{width:100%;padding:15px;border:0;border-radius:14px;background:#22c55e;color:#000;font-weight:800;font-size:17px;margin-top:12px;cursor:pointer}
+.btn2{background:#334155;color:white;font-size:14px;padding:10px}
+.btnBlue{background:#3b82f6;color:white;font-size:14px;padding:12px}
+.item{padding:12px 0;border-bottom:1px solid #334155;display:flex;justify-content:space-between;gap:10px}
+.item.novo{background:#14532d;border-radius:10px;padding:12px}
+.cat{font-size:12px;opacity:.7}
+.del{background:none;color:#ef4444;width:auto;padding:0;font-size:18px;border:0;flex-shrink:0}
+.badge{display:inline-block;padding:3px 8px;border-radius:99px;font-size:11px;font-weight:700;margin-top:4px}
+.Charles{background:#3b82f6}.Roberta{background:#ec4899}.Null{background:#64748b}
+.filtro{display:flex;gap:8px;margin-top:10px} .filtro button{padding:8px;font-size:13px;background:#334155;color:white}
+.filtro button.ativo{background:#22c55e;color:#000}
+.alerta{background:#f59e0b;color:#000;padding:12px;border-radius:12px;font-weight:700;margin-top:12px;font-size:14px}
+.verde{background:#22c55e;color:#000;padding:12px;border-radius:12px;font-weight:700;margin-top:12px;font-size:14px}
+.vermelho{background:#ef4444;color:white;padding:12px;border-radius:12px;font-weight:700;margin-top:12px;font-size:14px}
+#status{font-size:12px;opacity:.7;text-align:center;margin-top:8px}
+.catItem{padding:14px 0;border-bottom:1px solid #334155}
+.catTop{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.catNome{font-weight:700;font-size:15px} .catValor{font-weight:800;font-size:16px;white-space:nowrap}
+.catSub{font-size:12px;opacity:.7;margin-top:3px}
+.hBar{height:14px;background:#334155;border-radius:99px;overflow:hidden;margin-top:8px;display:flex}
+.hCharles{background:#3b82f6;height:100%} .hRoberta{background:#ec4899;height:100%} .hNull{background:#94a3b8;height:100%}
+.tetoRow{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #334155}
+.tetoRow span{flex:1;font-size:14px} .tetoRow input{margin:0;padding:10px}
+.fab{position:fixed;bottom:28px;right:20px;width:62px;height:62px;border-radius:50%;background:#22c55e;color:#000;font-size:32px;border:0;z-index:50;box-shadow:0 4px 14px rgba(0,0,0,.4)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:flex-end;z-index:100} .modal.open{display:flex}
+.modal-box{background:#1e293b;width:100%;border-radius:18px 18px 0 0;padding:16px;max-height:92vh;overflow:auto}
+.toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#22c55e;color:#000;padding:12px 18px;border-radius:99px;font-weight:700;z-index:200;display:none}
+.error{color:#fca5a5;font-size:13px;font-weight:700;display:none;margin-top:8px}
+.tabs{display:flex;gap:8px;margin-top:16px} .tabs button{padding:10px;font-size:14px;background:#334155;color:white} .tabs button.ativo{background:#22c55e;color:#000}
+.metaBox{background:#0f172a;border-radius:12px;padding:12px;margin-top:10px}
+.metaItem{padding:10px 0;border-bottom:1px solid #334155}
+.metaItem:last-child{border-bottom:0}
+.metaRow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;font-size:14px}
+.metaNome{white-space:nowrap;font-weight:700}
+.metaValor{text-align:right}
+.metaStatus{font-size:12px;opacity:.8;margin-top:2px;text-align:right}
+.metaBar{height:8px;background:#334155;border-radius:99px;overflow:hidden;margin-top:6px}
+</style>
+</head>
+<body>
+<h1>💰 Meu Controle</h1>
+<p style="opacity:.7;margin:4px 0">Charles & Roberta • Funciona sem internet</p>
+<div id="status">🔄 Carregando...</div>
+<div class="toast" id="toast">✅ Salvo!</div>
+<div class="tabs">
+  <button id="tabVisao" class="ativo">📊 Visão Geral</button>
+  <button id="tabConfig">⚙️ Configurações</button>
+</div>
+<div id="abaVisao">
+  <div class="card">
+    <label style="margin:0">📅 Filtrar por Mês de Lançamento</label>
+    <select id="filtroMes"><option value="Todos">Todos os meses</option></select>
+    <div style="margin-top:12px">Gasto no mês <span id="filtroInfo" style="opacity:.6"></span> <span id="filtroMesInfo" style="opacity:.6"></span></div>
+    <div class="saldo" id="total">R$ 0,00</div>
+    <div id="metaTexto">Meta Todos: R$ 2.900,00</div>
+    <div class="barra"><div class="preenchimento" id="barra"></div></div>
+    <div id="resta" style="margin-top:8px">Ainda pode gastar: R$ 2.900,00</div>
+    <div class="metaBox">
+      <b style="font-size:14px">🎯 Metas por responsável - <span id="metaMesTitulo">Mês filtrado</span></b>
+      <div id="metasPorResp"></div>
+    </div>
+    <div class="filtro" id="filtrosResp">
+      <button data-filtro="Todos" class="filtro-btn ativo">Todos</button>
+      <button data-filtro="Charles" class="filtro-btn">Charles</button>
+      <button data-filtro="Roberta" class="filtro-btn">Roberta</button>
+      <button data-filtro="Null" class="filtro-btn">Null</button>
+    </div>
+    <button id="btnSync" class="btn2">🔄 Sincronizar agora - Enviar meus gastos</button>
+    <button id="btnPuxar" class="btn2" style="background:#3b82f6;color:white">⬇️ Puxar da planilha - Gastos + Tetos + Metas</button>
+    <button id="btnReenviar" class="btn2" style="background:#f59e0b;color:#000">⚠️ Forçar reenvio de tudo</button>
+    <button id="btnFechamento" class="btnBlue">📤 Copiar Fechamento do Mês para WhatsApp</button>
+  </div>
+  <div class="card">
+    <h3 style="margin:0">📊 Análise por Categoria - Por Responsável <span id="catMes" style="font-size:13px;opacity:.6"></span></h3>
+    <p style="font-size:12px;opacity:.6;margin:6px 0">🔵 Charles &nbsp; 🩷 Roberta &nbsp; ⚪ Null • Filtrado pelo mês selecionado acima</p>
+    <div id="graficoCat"></div>
+    <div id="alertaTeto"></div>
+  </div>
+  <div class="card" id="cardLista">
+    <h3 style="margin:0">Extrato <span id="qtd" style="opacity:.6;font-size:14px"></span></h3>
+    <label>Filtrar por categoria</label>
+    <select id="filtroCat"><option value="Todas">Todas as categorias</option></select>
+    <div id="lista"></div>
+    <button id="btnExportar" class="btn2">📤 Copiar resumo filtrado</button>
+  </div>
+</div>
+<div id="abaConfig" style="display:none">
+  <div class="card">
+    <h3 style="margin:0">🎯 Metas por Responsável</h3>
+    <p style="font-size:12px;opacity:.6;margin:6px 0">Salva na aba Config da planilha e vale para os 2 celulares.</p>
+    <label>Meta Charles (R$)</label><input type="text" id="metaCharles" inputmode="decimal" placeholder="Ex: 1200,00">
+    <label>Meta Roberta (R$)</label><input type="text" id="metaRoberta" inputmode="decimal" placeholder="Ex: 1200,00">
+    <label>Meta Null - gastos conjuntos (R$)</label><input type="text" id="metaNull" inputmode="decimal" placeholder="Ex: 500,00">
+    <div id="metaTotalPreview" style="background:#0f172a;padding:12px;border-radius:12px;margin-top:12px;font-weight:700">Meta Todos: R$ 0,00</div>
+    <button id="btnSalvarMetas" class="btnBlue">💾 Salvar Metas - Envia para planilha</button>
+  </div>
+  <div class="card">
+    <h3 style="margin:0">🎯 Orçamento por Categoria - Definir Teto</h3>
+    <p style="font-size:12px;opacity:.6;margin:6px 0">Salva na aba Config e vale para os 2 celulares.</p>
+    <div id="listaTeto"></div>
+    <button id="btnSalvarTetos" class="btnBlue">💾 Salvar Tetos - Envia para planilha</button>
+  </div>
+  <div class="card">
+    <h3 style="margin:0">➕ Nova Categoria</h3>
+    <input type="text" id="novaCat" placeholder="Criar nova categoria ex: Saúde">
+    <button id="btnCriarCat" style="background:#3b82f6;color:white">+ Criar Categoria</button>
+  </div>
+  <div class="card">
+    <h3 style="margin:0">💳 Nova Conta</h3>
+    <input type="text" id="novaConta" placeholder="Conta ex: Nubank, BB, Caixa">
+    <button id="btnCriarConta" style="background:#3b82f6;color:white">+ Criar Conta</button>
+    <div id="listaContas" style="margin-top:10px;opacity:.8;font-size:13px"></div>
+  </div>
+</div>
+<button class="fab" id="fabBtn">➕</button>
+<div class="modal" id="modal"><div class="modal-box">
+  <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">➕ Novo Gasto</h3><button id="btnFechar" style="width:auto;padding:8px 14px;background:#334155;color:white;border-radius:99px">✕</button></div>
+  <p style="font-size:12px;opacity:.7"><span style="color:#ef4444">*</span> Obrigatório, exceto Descrição</p>
+  <label>Data <span style="color:#ef4444">*</span></label><input type="date" id="data">
+  <label>Valor - pode usar vírgula <span style="color:#ef4444">*</span></label><input type="text" id="valor" placeholder="Ex: 45,90" inputmode="decimal">
+  <label>Categoria <span style="color:#ef4444">*</span></label><select id="categoria"></select>
+  <label>Conta onde saiu o valor <span style="color:#ef4444">*</span></label><select id="conta"></select>
+  <label>Estabelecimento <span style="color:#ef4444">*</span></label><input type="text" id="estab" placeholder="Ex: Mercado BH, Shell, iFood" list="listaEstab"><datalist id="listaEstab"></datalist>
+  <label>Responsável pelo gasto <span style="color:#ef4444">*</span></label><select id="responsavel"><option value="">Selecione quem gastou</option><option value="Charles">Charles</option><option value="Roberta">Roberta</option><option value="Null">Null</option></select>
+  <label>Descrição / Obs (opcional)</label><input type="text" id="desc" placeholder="Ex: Compras da semana">
+  <div id="erroForm" class="error"></div>
+  <button id="btnAdd">Adicionar Gasto - Salva offline</button>
+</div></div>
+<script>
+var URL_BASE = "https://script.google.com/macros/s/AKfycbwVGnj28FrHLEBVYSjBHN0GK5_87cPGfBcCtk-yWELdVqAJ_NQDzVX_dcgN3yRG-NbwGA/exec";
+var categoriasPadrao = ["Moradia","Telefone/Internet","Alimentação","Restaurante","Lazer","Trabalho","Compras","Presentes","Pets","Transporte","Combustível","Carro","Investimentos","Outros"];
+var tetosPadrao = {"Moradia":800,"Telefone/Internet":200,"Alimentação":800,"Restaurante":300,"Lazer":300,"Trabalho":100,"Compras":400,"Presentes":200,"Pets":300,"Transporte":200,"Combustível":400,"Carro":300,"Investimentos":0,"Outros":200};
+var contasPadrao = ["Dinheiro","Rico","Alelo","Santander","Nubank","BB","Caixa"];
+var categorias = categoriasPadrao.slice();
+var tetos = Object.assign({}, tetosPadrao);
+var contas = contasPadrao.slice();
+var gastos = [];
+var metas = {Charles: 1200, Roberta: 1200, Null: 500};
+var filtroResp = 'Todos';
+var filtroMes = 'Todos';
+var ultimoId = null;
+function getMetaTotal(){ return (metas.Charles||0) + (metas.Roberta||0) + (metas.Null||0); }
+try{
+  var c = localStorage.getItem('categorias_off'); if(c) categorias = JSON.parse(c);
+  var t = localStorage.getItem('tetos_off'); if(t) tetos = JSON.parse(t);
+  var co = localStorage.getItem('contas_off'); if(co) contas = JSON.parse(co);
+  var g = localStorage.getItem('gastos_off'); if(g) gastos = JSON.parse(g);
+  var m = localStorage.getItem('metas_off'); if(m) metas = JSON.parse(m);
+  var fm = localStorage.getItem('filtroMes_off'); if(fm) filtroMes = fm;
+}catch(e){}
+document.getElementById('data').valueAsDate = new Date();
+function lerValorBR(texto){ if(!texto) return 0; var t = String(texto).trim().replace('R$','').trim(); if(t.indexOf('.')>-1 && t.indexOf(',')>-1) t = t.replace(/\./g,'').replace(',','.'); else if(t.indexOf(',')>-1) t = t.replace(',','.'); return parseFloat(t) || 0; }
+function fmt(v){ return 'R$ ' + Number(v).toFixed(2).replace('.',','); }
+function setStatus(t){ document.getElementById('status').innerText = t; }
+function showToast(msg){ var el=document.getElementById('toast'); el.textContent=msg; el.style.display='block'; setTimeout(function(){el.style.display='none'},2800); }
+function fecharModal(){ document.getElementById('modal').classList.remove('open'); }
+function showTab(t){ document.getElementById('abaVisao').style.display = t==='visao'?'block':'none'; document.getElementById('abaConfig').style.display = t==='config'?'block':'none'; document.getElementById('tabVisao').className = t==='visao'?'ativo':''; document.getElementById('tabConfig').className = t==='config'?'ativo':''; }
+function getMesDe(g){ var d = g.dataISO || g.data || ""; if(!d) return ""; if(d.indexOf("-")>-1 && d.length>=7) return d.substring(0,7); var partes = d.split("/"); if(partes.length===3) return partes[2]+"-"+partes[1]; return ""; }
+function nomeMes(mesAAAAMM){ if(mesAAAAMM==="Todos") return "Todos os meses"; var partes = mesAAAAMM.split("-"); var nomes = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return nomes[parseInt(partes[1])] + "/" + partes[0]; }
+function atualizarPreviewMeta(){ var c = lerValorBR(document.getElementById('metaCharles').value); var r = lerValorBR(document.getElementById('metaRoberta').value); var n = lerValorBR(document.getElementById('metaNull').value); document.getElementById('metaTotalPreview').textContent = 'Meta Todos (automática): ' + fmt(c+r+n) + '  •  Charles ' + fmt(c) + ' + Roberta ' + fmt(r) + ' + Null ' + fmt(n); }
+document.getElementById('fabBtn').addEventListener('click', function(){ document.getElementById('modal').classList.add('open'); document.getElementById('erroForm').style.display='none'; });
+document.getElementById('btnFechar').addEventListener('click', fecharModal);
+document.getElementById('modal').addEventListener('click', function(e){ if(e.target.id==='modal') fecharModal(); });
+document.getElementById('tabVisao').addEventListener('click', function(){ showTab('visao'); });
+document.getElementById('tabConfig').addEventListener('click', function(){ showTab('config'); });
+document.getElementById('btnSync').addEventListener('click', function(){ sincronizar(false); });
+document.getElementById('btnPuxar').addEventListener('click', function(){ puxarDaPlanilha(false); puxarConfig(false); });
+document.getElementById('btnReenviar').addEventListener('click', function(){ if(!confirm('Reenviar TODOS os gastos para a planilha?')) return; gastos.forEach(function(g){ g.status = 'pendente'; }); try{ localStorage.setItem('gastos_off', JSON.stringify(gastos)); }catch(e){} sincronizar(false); alert('Enviando tudo... espera 10 segundos e abre a planilha para conferir.'); });
+document.getElementById('btnFechamento').addEventListener('click', exportarFechamento);
+document.getElementById('btnExportar').addEventListener('click', exportar);
+document.getElementById('btnSalvarTetos').addEventListener('click', salvarTetos);
+document.getElementById('btnCriarCat').addEventListener('click', criarCategoria);
+document.getElementById('btnCriarConta').addEventListener('click', criarConta);
+document.getElementById('btnAdd').addEventListener('click', adicionar);
+document.getElementById('filtroCat').addEventListener('change', atualizar);
+document.getElementById('filtroMes').addEventListener('change', function(){ filtroMes = this.value; try{ localStorage.setItem('filtroMes_off', filtroMes); }catch(e){} atualizar(); });
+document.getElementById('btnSalvarMetas').addEventListener('click', function(){ metas.Charles = lerValorBR(document.getElementById('metaCharles').value); metas.Roberta = lerValorBR(document.getElementById('metaRoberta').value); metas.Null = lerValorBR(document.getElementById('metaNull').value); saveAll(); enviarConfig(); showToast('Metas salvas e enviadas para os 2 celulares!'); });
+['metaCharles','metaRoberta','metaNull'].forEach(function(id){ document.getElementById(id).addEventListener('input', atualizarPreviewMeta); });
+var filtroBtns = document.querySelectorAll('.filtro-btn');
+for(var i=0;i<filtroBtns.length;i++){ filtroBtns[i].addEventListener('click', function(){ filtroResp = this.getAttribute('data-filtro'); for(var j=0;j<filtroBtns.length;j++) filtroBtns[j].classList.remove('ativo'); this.classList.add('ativo'); atualizar(); }); }
+function renderCategorias(){
+  var sel = document.getElementById('categoria'); sel.innerHTML = '<option value="">Selecione a categoria</option>' + categorias.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  var selConta = document.getElementById('conta'); selConta.innerHTML = '<option value="">Selecione a conta</option>' + contas.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join('');
+  var filtro = document.getElementById('filtroCat'); var atual = filtro.value || 'Todas'; filtro.innerHTML = '<option value="Todas">Todas as categorias</option>' + categorias.map(function(c){ return '<option value="'+c+'">'+c+'</option>'; }).join(''); filtro.value = atual;
+  var mesesSet = {}; gastos.forEach(function(g){ var m = getMesDe(g); if(m) mesesSet[m]=true; }); var meses = Object.keys(mesesSet).sort().reverse();
+  var selMes = document.getElementById('filtroMes'); var atualMes = filtroMes; selMes.innerHTML = '<option value="Todos">Todos os meses</option>' + meses.map(function(m){ return '<option value="'+m+'">'+nomeMes(m)+'</option>'; }).join(''); if(meses.indexOf(atualMes)>-1 || atualMes==="Todos") selMes.value = atualMes; else { filtroMes = meses.length? meses[0] : "Todos"; selMes.value = filtroMes; }
+  var div = document.getElementById('listaTeto'); div.innerHTML='';
+  for(var k=0;k<categorias.length;k++){ (function(cat){ var row=document.createElement('div'); row.className='tetoRow'; var sp=document.createElement('span'); sp.textContent=cat; row.appendChild(sp); var inp=document.createElement('input'); inp.type='text'; inp.inputMode='decimal'; inp.value = tetos[cat] ? String(tetos[cat]).replace('.',',') : ''; inp.placeholder='Sem teto ex: 800,00'; row.appendChild(inp); inp.addEventListener('change', function(){ tetos[cat]=lerValorBR(inp.value); saveAll(); }); div.appendChild(row); })(categorias[k]); }
+  document.getElementById('listaContas').textContent = 'Contas: ' + contas.join(' • ');
+  document.getElementById('metaCharles').value = metas.Charles ? String(metas.Charles).replace('.',',') : '';
+  document.getElementById('metaRoberta').value = metas.Roberta ? String(metas.Roberta).replace('.',',') : '';
+  document.getElementById('metaNull').value = metas.Null ? String(metas.Null).replace('.',',') : '';
+  atualizarPreviewMeta();
+}
+function salvarTetos(){ var inputs = document.querySelectorAll('#listaTeto input'); categorias.forEach(function(cat, idx){ if(inputs[idx]) tetos[cat]=lerValorBR(inputs[idx].value); }); saveAll(); enviarConfig(); showToast('Tetos salvos e enviados para os 2 celulares!'); }
+function criarCategoria(){ var v = document.getElementById('novaCat').value.trim(); if(!v) return alert('Escreve o nome da categoria'); if(categorias.indexOf(v)>-1) return alert('Essa categoria já existe'); categorias.push(v); if(!(v in tetos)) tetos[v]=0; document.getElementById('novaCat').value=''; saveAll(); enviarConfig(); renderCategorias(); document.getElementById('categoria').value=v; showToast('Categoria '+v+' criada!'); }
+function criarConta(){ var v = document.getElementById('novaConta').value.trim(); if(!v) return alert('Escreve o nome da conta'); if(contas.indexOf(v)>-1) return alert('Essa conta já existe'); contas.push(v); document.getElementById('novaConta').value=''; saveAll(); renderCategorias(); showToast('Conta '+v+' criada!'); }
+function saveAll(){ try{ localStorage.setItem('categorias_off', JSON.stringify(categorias)); localStorage.setItem('tetos_off', JSON.stringify(tetos)); localStorage.setItem('contas_off', JSON.stringify(contas)); localStorage.setItem('gastos_off', JSON.stringify(gastos)); localStorage.setItem('metas_off', JSON.stringify(metas)); }catch(e){} atualizar(); }
+function enviarConfig(){ if(!navigator.onLine) return; var params = new URLSearchParams({ acao: 'salvar_config', tetos: JSON.stringify(tetos), metas: JSON.stringify(metas) }); fetch(URL_BASE + '?' + params.toString(), {method: 'GET', mode: 'no-cors'}).catch(function(){}); }
+function puxarConfig(silencioso){ if(!navigator.onLine) return; fetch(URL_BASE + '?acao=listar_config').then(function(res){ return res.text(); }).then(function(texto){ try{ var cfg = JSON.parse(texto); if(cfg.tetos && Object.keys(cfg.tetos).length>0){ tetos = cfg.tetos; var novasCats = Object.keys(cfg.tetos); novasCats.forEach(function(c){ if(categorias.indexOf(c)===-1) categorias.push(c); }); } if(cfg.metas && Object.keys(cfg.metas).length>0){ if(cfg.metas.Charles !== undefined) metas.Charles = Number(cfg.metas.Charles); if(cfg.metas.Roberta !== undefined) metas.Roberta = Number(cfg.metas.Roberta); if(cfg.metas.Null !== undefined) metas.Null = Number(cfg.metas.Null); } try{ localStorage.setItem('tetos_off', JSON.stringify(tetos)); localStorage.setItem('metas_off', JSON.stringify(metas)); localStorage.setItem('categorias_off', JSON.stringify(categorias)); }catch(e){} atualizar(); if(!silencioso) showToast('Tetos e metas atualizados da planilha!'); }catch(e){} }).catch(function(){}); }
+function sincronizar(silencioso){ var pend = gastos.filter(function(g){ return g.status==='pendente'; }); if(pend.length===0){ if(!silencioso) alert('Nada para sincronizar'); setStatus('✅ Sincronizado - '+gastos.length+' gastos'); return; } if(!navigator.onLine){ if(!silencioso) alert('Sem internet. Ficou salvo no celular, vai enviar quando voltar.'); setStatus('📴 Offline - '+pend.length+' pendentes'); return; } setStatus('🔄 Sincronizando '+pend.length+'...'); pend.forEach(function(g){ var params = new URLSearchParams({ acao: 'adicionar', valor: String(g.valor).replace('.', ','), cat: g.cat, resp: g.resp, data: g.data, estab: g.estab, conta: g.conta, desc: g.desc, id: g.id }); fetch(URL_BASE + '?' + params.toString(), {method: 'GET', mode: 'no-cors'}).then(function(){ g.status='sincronizado'; saveAll(); setStatus('✅ Sincronizado - '+gastos.length+' gastos'); }).catch(function(){}); }); }
+function puxarDaPlanilha(silencioso){ if(!navigator.onLine){ if(!silencioso) alert('Sem internet para puxar.'); return; } setStatus('⬇️ Puxando gastos da planilha...'); fetch(URL_BASE + '?acao=listar').then(function(res){ return res.text(); }).then(function(texto){ try{ var lista = JSON.parse(texto); var novos = 0; var idsExistentes = {}; gastos.forEach(function(g){ idsExistentes[g.id]=true; }); lista.forEach(function(item){ if(!idsExistentes[item.id]){ var dataISO = ""; var partes = String(item.data).split("/"); if(partes.length===3) dataISO = partes[2]+"-"+partes[1]+"-"+partes[0]; gastos.push({ id: item.id, valor: Number(item.valor), cat: item.cat, resp: item.resp, data: item.data, dataISO: dataISO, estab: item.estab, conta: item.conta, desc: item.desc, status: 'sincronizado' }); novos++; } }); gastos.sort(function(a,b){ return String(b.dataISO||b.data).localeCompare(String(a.dataISO||a.data)); }); try{ localStorage.setItem('gastos_off', JSON.stringify(gastos)); }catch(e){} atualizar(); if(!silencioso) alert(novos===0 ? 'Nenhum gasto novo. Você já está atualizado!' : 'Puxei '+novos+' gasto(s) novo(s) da planilha! 🎉'); setStatus('✅ Atualizado - '+gastos.length+' gastos • '+novos+' novos'); }catch(e){ if(!silencioso) alert('Erro ao ler planilha. Verifica se o Apps Script foi atualizado.'); } }).catch(function(){ if(!silencioso) alert('Sem conexão com a planilha. Tenta de novo.'); }); }
+function adicionar(){ var data = document.getElementById('data').value; var v = lerValorBR(document.getElementById('valor').value); var cat = document.getElementById('categoria').value; var conta = document.getElementById('conta').value; var estab = document.getElementById('estab').value.trim(); var resp = document.getElementById('responsavel').value; var desc = document.getElementById('desc').value.trim(); var faltando = []; if(!data) faltando.push('Data'); if(!v) faltando.push('Valor'); if(!cat) faltando.push('Categoria'); if(!conta) faltando.push('Conta'); if(!estab) faltando.push('Estabelecimento'); if(!resp) faltando.push('Responsável'); if(faltando.length>0){ var el=document.getElementById('erroForm'); el.textContent='⚠️ Preencha: '+faltando.join(', '); el.style.display='block'; return; } document.getElementById('erroForm').style.display='none'; var novoId = String(Date.now()); ultimoId = novoId; var g = {id:novoId, valor:v, cat:cat, resp:resp, data: new Date(data+'T12:00:00').toLocaleDateString('pt-BR'), dataISO:data, estab:estab, conta:conta, desc:desc||'Sem descrição', status:'pendente'}; gastos.unshift(g); try{ localStorage.setItem('gastos_off', JSON.stringify(gastos)); }catch(e){} document.getElementById('valor').value=''; document.getElementById('estab').value=''; document.getElementById('desc').value=''; document.getElementById('responsavel').value=''; fecharModal(); showTab('visao'); atualizar(); showToast('✅ Salvo! '+estab+' - '+fmt(v)); setTimeout(function(){ var card=document.getElementById('cardLista'); if(card) card.scrollIntoView({behavior:'smooth'}); }, 150); sincronizar(true); }
+function filtrar(){ var cat = document.getElementById('filtroCat').value; return gastos.filter(function(g){ var okMes = (filtroMes==='Todos' || getMesDe(g)===filtroMes); var okResp = (filtroResp==='Todos' || g.resp===filtroResp); var okCat = (cat==='Todas' || g.cat===cat); return okMes && okResp && okCat; }); }
+function filtrarMesResp(){ return gastos.filter(function(g){ return (filtroMes==='Todos' || getMesDe(g)===filtroMes); }); }
+function somaPorRespMes(resp){ var s=0; filtrarMesResp().forEach(function(g){ if(g.resp===resp) s+=Number(g.valor); }); return s; }
+function exportar(){ var lista = filtrar(); var total = lista.reduce(function(a,b){return a+Number(b.valor)},0); var texto = '💰 RESUMO - '+filtroResp+' • '+nomeMes(filtroMes)+'\nTotal: '+fmt(total)+'\nMeta '+filtroResp+': '+fmt(filtroResp==='Todos'?getMetaTotal():(metas[filtroResp]||0))+'\n\n' + lista.slice(0,30).map(function(g){ return '• '+g.data+' - '+g.estab+' - '+g.desc+' ('+g.cat+') - '+fmt(g.valor)+' - '+g.resp+' - '+g.conta; }).join('\n'); if(navigator.clipboard) navigator.clipboard.writeText(texto).then(function(){ alert('Resumo copiado!'); }); else alert(texto); }
+function exportarFechamento(){ var c=somaPorRespMes('Charles'), r=somaPorRespMes('Roberta'), n=somaPorRespMes('Null'); var total=c+r+n; var diff=c-r; var acerto = diff>0.01 ? 'Para acertar 50/50, Charles transfere '+fmt(Math.abs(diff)/2)+' para Roberta' : diff<-0.01 ? 'Para acertar 50/50, Roberta transfere '+fmt(Math.abs(diff)/2)+' para Charles' : 'Está zerado 50/50, perfeito!'; var porCat={}; filtrarMesResp().forEach(function(g){ porCat[g.cat]=(porCat[g.cat]||0)+Number(g.valor); }); var top=Object.entries(porCat).sort(function(a,b){return b[1]-a[1]}).slice(0,5); var estouradas=Object.entries(porCat).filter(function(e){ return tetos[e[0]]>0 && e[1]>tetos[e[0]]; }).map(function(e){ return e[0]+': gastou '+fmt(e[1])+' de teto '+fmt(tetos[e[0]])+' (passou '+fmt(e[1]-tetos[e[0]])+')'; }); var texto='📊 FECHAMENTO - '+nomeMes(filtroMes)+'\n\nTotal gasto: '+fmt(total)+' / Meta Todos: '+fmt(getMetaTotal())+'\nCharles: '+fmt(c)+' / Meta: '+fmt(metas.Charles)+'\nRoberta: '+fmt(r)+' / Meta: '+fmt(metas.Roberta)+'\nNull: '+fmt(n)+' / Meta: '+fmt(metas.Null)+'\n\n⚖️ ACERTO:\n'+acerto+'\n\n🏆 TOP CATEGORIAS ('+nomeMes(filtroMes)+'):\n'+top.map(function(e){return e[0]+': '+fmt(e[1])}).join('\n')+(estouradas.length?'\n\n🚨 TETOS ESTOURADOS:\n'+estouradas.join('\n'):'\n\n✅ Nenhum teto estourado'); if(navigator.clipboard) navigator.clipboard.writeText(texto).then(function(){alert('Fechamento copiado!')}); else alert(texto); }
+function atualizar(){
+  renderCategorias();
+  var lista = filtrar();
+  var totalFiltrado = lista.reduce(function(a,b){return a+Number(b.valor)},0);
+  var metaAtual = filtroResp==='Todos' ? getMetaTotal() : (metas[filtroResp]||0);
+  document.getElementById('total').innerText = fmt(totalFiltrado);
+  document.getElementById('metaTexto').innerText = filtroResp==='Todos' ? 'Meta Todos: ' + fmt(getMetaTotal()) + ' (Charles ' + fmt(metas.Charles) + ' + Roberta ' + fmt(metas.Roberta) + ' + Null ' + fmt(metas.Null) + ')' : 'Meta ' + filtroResp + ': ' + fmt(metaAtual);
+  document.getElementById('filtroInfo').innerText = filtroResp!=='Todos' ? '• '+filtroResp : '';
+  document.getElementById('filtroMesInfo').innerText = '• ' + nomeMes(filtroMes);
+  document.getElementById('metaMesTitulo').innerText = nomeMes(filtroMes);
+  document.getElementById('catMes').innerText = '• ' + nomeMes(filtroMes);
+  var pct = metaAtual>0 ? Math.min(100, (totalFiltrado/metaAtual*100)) : 0;
+  var barra = document.getElementById('barra'); barra.style.width = pct+'%'; barra.style.background = pct>90 ? '#ef4444' : pct>70 ? '#f59e0b' : '#22c55e';
+  document.getElementById('resta').innerText = 'Ainda pode gastar: '+fmt(metaAtual-totalFiltrado);
+  var htmlMetas = ['Charles','Roberta','Null'].map(function(nome){ var gasto = somaPorRespMes(nome); var metaR = metas[nome]||0; var p = metaR>0 ? Math.min(100, gasto/metaR*100) : 0; var cor = gasto>metaR && metaR>0 ? '#ef4444' : p>80 ? '#f59e0b' : '#22c55e'; var emoji = nome==='Charles'?'🔵':nome==='Roberta'?'🩷':'⚪'; var status = metaR===0 ? 'Sem meta' : gasto>metaR ? '🚨 Estourou! Passou '+fmt(gasto-metaR) : 'Falta '+fmt(Math.max(0, metaR-gasto)); return '<div class="metaItem"><div class="metaRow"><span class="metaNome">'+emoji+' '+nome+'</span><span class="metaValor"><b>'+fmt(gasto)+'</b> / '+fmt(metaR)+'</span></div><div class="metaStatus">'+status+'</div><div class="metaBar"><div style="width:'+p+'%;height:100%;background:'+cor+'"></div></div></div>'; }).join('');
+  document.getElementById('metasPorResp').innerHTML = htmlMetas;
+  var baseGrafico = gastos.filter(function(g){ return (filtroMes==='Todos' || getMesDe(g)===filtroMes) && (filtroResp==='Todos' || g.resp===filtroResp); });
+  var porCatDet={}; baseGrafico.forEach(function(g){ if(!porCatDet[g.cat]) porCatDet[g.cat]={total:0, Charles:0, Roberta:0, Null:0}; porCatDet[g.cat].total+=Number(g.valor); porCatDet[g.cat][g.resp]=(porCatDet[g.cat][g.resp]||0)+Number(g.valor); });
+  var ordenado=Object.entries(porCatDet).sort(function(a,b){return b[1].total-a[1].total}); var maxVal=ordenado.length?ordenado[0][1].total:1; var estouradas=[];
+  document.getElementById('graficoCat').innerHTML = ordenado.length ? ordenado.map(function(e){ var nome=e[0], d=e[1]; var teto=tetos[nome]||0; var pctTeto=teto>0?Math.round(d.total/teto*100):0; var estourou=teto>0 && d.total>teto; var perto=teto>0 && !estourou && d.total>teto*0.8; if(estourou) estouradas.push(nome); var wTotal=teto>0?Math.min(100,d.total/teto*100):(d.total/maxVal*100); var wC=d.total?(d.Charles/d.total*wTotal):0; var wR=d.total?(d.Roberta/d.total*wTotal):0; var wN=d.total?(d.Null/d.total*wTotal):0; var status=''; if(estourou) status='<div style="color:#ef4444;font-weight:700;font-size:12px;margin-top:4px">🚨 Estourou! Passou '+fmt(d.total-teto)+' do teto de '+fmt(teto)+' ('+pctTeto+'%)</div>'; else if(perto) status='<div style="color:#f59e0b;font-weight:700;font-size:12px;margin-top:4px">⚠️ Atenção: '+pctTeto+'% do teto - faltam '+fmt(teto-d.total)+' para estourar</div>'; else if(teto>0) status='<div style="font-size:12px;opacity:.6;margin-top:4px">Teto '+fmt(teto)+' • '+pctTeto+'% usado • ainda pode gastar '+fmt(teto-d.total)+'</div>'; else status='<div style="font-size:12px;opacity:.6;margin-top:4px">Sem teto definido</div>'; var detalhe = filtroResp==='Todos' ? '🔵 Charles '+fmt(d.Charles)+' • 🩷 Roberta '+fmt(d.Roberta)+(d.Null?' • ⚪ Null '+fmt(d.Null):'') : filtroResp+' '+fmt(d.total); return '<div class="catItem"><div class="catTop"><span class="catNome">'+nome+'</span><span class="catValor" style="color:'+(estourou?'#ef4444':'white')+'">'+fmt(d.total)+'</span></div><div class="catSub">'+detalhe+' • '+nomeMes(filtroMes)+'</div><div class="hBar"><div class="hCharles" style="width:'+wC+'%"></div><div class="hRoberta" style="width:'+wR+'%"></div><div class="hNull" style="width:'+wN+'%"></div></div>'+status+'</div>'; }).join('') : '<p style="opacity:.6">Sem gastos nesse mês. Clique no ➕ para lançar.</p>';
+  if(estouradas.length) document.getElementById('alertaTeto').innerHTML='<div class="vermelho">🚨 '+estouradas.length+' categoria(s) estouraram o teto: '+estouradas.join(', ')+'</div>'; else { var pertoList=ordenado.filter(function(e){ return tetos[e[0]]>0 && e[1].total>tetos[e[0]]*0.8 && e[1].total<=tetos[e[0]]; }); if(pertoList.length) document.getElementById('alertaTeto').innerHTML='<div class="alerta">⚠️ Atenção: '+pertoList.map(function(e){return e[0]}).join(', ')+' está perto de estourar o teto.</div>'; else document.getElementById('alertaTeto').innerHTML='<div class="verde">✅ Nenhuma categoria estourou o teto.</div>'; }
+  var estabs=[...new Set(gastos.map(function(g){return g.estab}))]; document.getElementById('listaEstab').innerHTML = estabs.map(function(e){ return '<option value="'+e+'">'; }).join('');
+  var divLista=document.getElementById('lista'); divLista.innerHTML=''; document.getElementById('qtd').textContent='('+lista.length+')';
+  lista.forEach(function(g){ var div=document.createElement('div'); div.className='item'+(g.id===ultimoId?' novo':''); var left=document.createElement('div'); left.innerHTML='<b>'+g.estab+' • '+fmt(g.valor)+'</b><br><span class="cat">'+g.data+' • '+g.cat+' • '+(g.desc||'Sem descrição')+' • Conta: '+g.conta+'</span><br><span class="badge '+g.resp+'">'+g.resp+'</span> <span style="font-size:11px;opacity:.6">'+(g.status==='pendente'?'⏳ Pendente':'✅ Sincronizado')+'</span>'; var del=document.createElement('button'); del.textContent='×'; del.className='del'; del.addEventListener('click', function(){ if(confirm('Apagar esse gasto?')){ gastos=gastos.filter(function(x){return x!==g}); saveAll(); } }); div.appendChild(left); div.appendChild(del); divLista.appendChild(div); });
+  if(lista.length===0) divLista.innerHTML='<p style="opacity:.6">Nenhum gasto nesse filtro.</p>';
+  var pend=gastos.filter(function(g){return g.status==='pendente'}).length; setStatus((navigator.onLine?'🟢 Online':'📴 Offline - salvando no celular')+' • '+pend+' pendentes • '+gastos.length+' gastos salvos • Mês: '+nomeMes(filtroMes));
+}
+function atualizarRede(){ atualizar(); if(navigator.onLine){ sincronizar(true); puxarDaPlanilha(true); puxarConfig(true); } }
+window.addEventListener('online', atualizarRede);
+window.addEventListener('offline', atualizarRede);
+atualizar();
+if(navigator.onLine){ sincronizar(true); puxarDaPlanilha(true); puxarConfig(true); }
+</script>
+</body>
+</html>
