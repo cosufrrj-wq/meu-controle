@@ -60,6 +60,7 @@ button{width:100%;padding:15px;border:0;border-radius:14px;background:#22c55e;co
 .metaValor{text-align:right}
 .metaStatus{font-size:12px;opacity:.8;margin-top:2px;text-align:right}
 .metaBar{height:8px;background:#334155;border-radius:99px;overflow:hidden;margin-top:6px}
+.parcPreview{background:#0f172a;padding:12px;border-radius:12px;margin-top:10px;font-size:14px;font-weight:700;display:none}
 </style>
 </head>
 <body>
@@ -141,8 +142,24 @@ button{width:100%;padding:15px;border:0;border-radius:14px;background:#22c55e;co
 <div class="modal" id="modal"><div class="modal-box">
   <div style="display:flex;justify-content:space-between;align-items:center"><h3 style="margin:0">➕ Novo Gasto</h3><button id="btnFechar" style="width:auto;padding:8px 14px;background:#334155;color:white;border-radius:99px">✕</button></div>
   <p style="font-size:12px;opacity:.7"><span style="color:#ef4444">*</span> Obrigatório, exceto Descrição</p>
-  <label>Data <span style="color:#ef4444">*</span></label><input type="date" id="data">
-  <label>Valor - pode usar vírgula <span style="color:#ef4444">*</span></label><input type="text" id="valor" placeholder="Ex: 45,90" inputmode="decimal">
+  <label>Data da compra / 1ª parcela <span style="color:#ef4444">*</span></label><input type="date" id="data">
+  <label>Valor TOTAL da compra <span style="color:#ef4444">*</span></label><input type="text" id="valor" placeholder="Ex: 100,00" inputmode="decimal">
+  <label>Parcelar?</label>
+  <select id="parcelas">
+    <option value="1">1x - À vista</option>
+    <option value="2">2x</option>
+    <option value="3">3x</option>
+    <option value="4">4x</option>
+    <option value="5">5x</option>
+    <option value="6">6x</option>
+    <option value="7">7x</option>
+    <option value="8">8x</option>
+    <option value="9">9x</option>
+    <option value="10">10x</option>
+    <option value="11">11x</option>
+    <option value="12">12x</option>
+  </select>
+  <div id="parcPreview" class="parcPreview"></div>
   <label>Categoria <span style="color:#ef4444">*</span></label><select id="categoria"></select>
   <label>Conta onde saiu o valor <span style="color:#ef4444">*</span></label><select id="conta"></select>
   <label>Estabelecimento <span style="color:#ef4444">*</span></label><input type="text" id="estab" placeholder="Ex: Mercado BH, Shell, iFood" list="listaEstab"><datalist id="listaEstab"></datalist>
@@ -183,6 +200,22 @@ function showTab(t){ document.getElementById('abaVisao').style.display = t==='vi
 function getMesDe(g){ var d = g.dataISO || g.data || ""; if(!d) return ""; if(d.indexOf("-")>-1 && d.length>=7) return d.substring(0,7); var partes = d.split("/"); if(partes.length===3) return partes[2]+"-"+partes[1]; return ""; }
 function nomeMes(mesAAAAMM){ if(mesAAAAMM==="Todos") return "Todos os meses"; var partes = mesAAAAMM.split("-"); var nomes = ["","Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]; return nomes[parseInt(partes[1])] + "/" + partes[0]; }
 function atualizarPreviewMeta(){ var c = lerValorBR(document.getElementById('metaCharles').value); var r = lerValorBR(document.getElementById('metaRoberta').value); var n = lerValorBR(document.getElementById('metaNull').value); document.getElementById('metaTotalPreview').textContent = 'Meta Todos (automática): ' + fmt(c+r+n) + '  •  Charles ' + fmt(c) + ' + Roberta ' + fmt(r) + ' + Null ' + fmt(n); }
+function atualizarPreviewParc(){
+  var total = lerValorBR(document.getElementById('valor').value);
+  var n = parseInt(document.getElementById('parcelas').value || '1', 10);
+  var box = document.getElementById('parcPreview');
+  if(n <= 1 || !total){
+    box.style.display = 'none';
+    document.getElementById('btnAdd').textContent = 'Adicionar Gasto - Salva offline';
+    return;
+  }
+  var valorParc = Math.round((total / n) * 100) / 100;
+  box.style.display = 'block';
+  box.textContent = '💳 ' + n + 'x de ' + fmt(valorParc) + '  •  Total: ' + fmt(total) + '  •  Vai criar ' + n + ' lançamentos, um por mês';
+  document.getElementById('btnAdd').textContent = 'Adicionar ' + n + ' Parcelas - Salva offline';
+}
+document.getElementById('valor').addEventListener('input', atualizarPreviewParc);
+document.getElementById('parcelas').addEventListener('change', atualizarPreviewParc);
 document.getElementById('fabBtn').addEventListener('click', function(){ document.getElementById('modal').classList.add('open'); document.getElementById('erroForm').style.display='none'; });
 document.getElementById('btnFechar').addEventListener('click', fecharModal);
 document.getElementById('modal').addEventListener('click', function(e){ if(e.target.id==='modal') fecharModal(); });
@@ -225,7 +258,63 @@ function enviarConfig(){ if(!navigator.onLine) return; var params = new URLSearc
 function puxarConfig(silencioso){ if(!navigator.onLine) return; fetch(URL_BASE + '?acao=listar_config').then(function(res){ return res.text(); }).then(function(texto){ try{ var cfg = JSON.parse(texto); if(cfg.tetos && Object.keys(cfg.tetos).length>0){ tetos = cfg.tetos; var novasCats = Object.keys(cfg.tetos); novasCats.forEach(function(c){ if(categorias.indexOf(c)===-1) categorias.push(c); }); } if(cfg.metas && Object.keys(cfg.metas).length>0){ if(cfg.metas.Charles !== undefined) metas.Charles = Number(cfg.metas.Charles); if(cfg.metas.Roberta !== undefined) metas.Roberta = Number(cfg.metas.Roberta); if(cfg.metas.Null !== undefined) metas.Null = Number(cfg.metas.Null); } try{ localStorage.setItem('tetos_off', JSON.stringify(tetos)); localStorage.setItem('metas_off', JSON.stringify(metas)); localStorage.setItem('categorias_off', JSON.stringify(categorias)); }catch(e){} atualizar(); if(!silencioso) showToast('Tetos e metas atualizados da planilha!'); }catch(e){} }).catch(function(){}); }
 function sincronizar(silencioso){ var pend = gastos.filter(function(g){ return g.status==='pendente'; }); if(pend.length===0){ if(!silencioso) alert('Nada para sincronizar'); setStatus('✅ Sincronizado - '+gastos.length+' gastos'); return; } if(!navigator.onLine){ if(!silencioso) alert('Sem internet. Ficou salvo no celular, vai enviar quando voltar.'); setStatus('📴 Offline - '+pend.length+' pendentes'); return; } setStatus('🔄 Sincronizando '+pend.length+'...'); pend.forEach(function(g){ var params = new URLSearchParams({ acao: 'adicionar', valor: String(g.valor).replace('.', ','), cat: g.cat, resp: g.resp, data: g.data, estab: g.estab, conta: g.conta, desc: g.desc, id: g.id }); fetch(URL_BASE + '?' + params.toString(), {method: 'GET', mode: 'no-cors'}).then(function(){ g.status='sincronizado'; saveAll(); setStatus('✅ Sincronizado - '+gastos.length+' gastos'); }).catch(function(){}); }); }
 function puxarDaPlanilha(silencioso){ if(!navigator.onLine){ if(!silencioso) alert('Sem internet para puxar.'); return; } setStatus('⬇️ Puxando gastos da planilha...'); fetch(URL_BASE + '?acao=listar').then(function(res){ return res.text(); }).then(function(texto){ try{ var lista = JSON.parse(texto); var novos = 0; var idsExistentes = {}; gastos.forEach(function(g){ idsExistentes[g.id]=true; }); lista.forEach(function(item){ if(!idsExistentes[item.id]){ var dataISO = ""; var partes = String(item.data).split("/"); if(partes.length===3) dataISO = partes[2]+"-"+partes[1]+"-"+partes[0]; gastos.push({ id: item.id, valor: Number(item.valor), cat: item.cat, resp: item.resp, data: item.data, dataISO: dataISO, estab: item.estab, conta: item.conta, desc: item.desc, status: 'sincronizado' }); novos++; } }); gastos.sort(function(a,b){ return String(b.dataISO||b.data).localeCompare(String(a.dataISO||a.data)); }); try{ localStorage.setItem('gastos_off', JSON.stringify(gastos)); }catch(e){} atualizar(); if(!silencioso) alert(novos===0 ? 'Nenhum gasto novo. Você já está atualizado!' : 'Puxei '+novos+' gasto(s) novo(s) da planilha! 🎉'); setStatus('✅ Atualizado - '+gastos.length+' gastos • '+novos+' novos'); }catch(e){ if(!silencioso) alert('Erro ao ler planilha. Verifica se o Apps Script foi atualizado.'); } }).catch(function(){ if(!silencioso) alert('Sem conexão com a planilha. Tenta de novo.'); }); }
-function adicionar(){ var data = document.getElementById('data').value; var v = lerValorBR(document.getElementById('valor').value); var cat = document.getElementById('categoria').value; var conta = document.getElementById('conta').value; var estab = document.getElementById('estab').value.trim(); var resp = document.getElementById('responsavel').value; var desc = document.getElementById('desc').value.trim(); var faltando = []; if(!data) faltando.push('Data'); if(!v) faltando.push('Valor'); if(!cat) faltando.push('Categoria'); if(!conta) faltando.push('Conta'); if(!estab) faltando.push('Estabelecimento'); if(!resp) faltando.push('Responsável'); if(faltando.length>0){ var el=document.getElementById('erroForm'); el.textContent='⚠️ Preencha: '+faltando.join(', '); el.style.display='block'; return; } document.getElementById('erroForm').style.display='none'; var novoId = String(Date.now()); ultimoId = novoId; var g = {id:novoId, valor:v, cat:cat, resp:resp, data: new Date(data+'T12:00:00').toLocaleDateString('pt-BR'), dataISO:data, estab:estab, conta:conta, desc:desc||'Sem descrição', status:'pendente'}; gastos.unshift(g); try{ localStorage.setItem('gastos_off', JSON.stringify(gastos)); }catch(e){} document.getElementById('valor').value=''; document.getElementById('estab').value=''; document.getElementById('desc').value=''; document.getElementById('responsavel').value=''; fecharModal(); showTab('visao'); atualizar(); showToast('✅ Salvo! '+estab+' - '+fmt(v)); setTimeout(function(){ var card=document.getElementById('cardLista'); if(card) card.scrollIntoView({behavior:'smooth'}); }, 150); sincronizar(true); }
+function adicionar(){
+  var data = document.getElementById('data').value;
+  var vTotal = lerValorBR(document.getElementById('valor').value);
+  var nParc = parseInt(document.getElementById('parcelas').value || '1', 10);
+  var cat = document.getElementById('categoria').value;
+  var conta = document.getElementById('conta').value;
+  var estab = document.getElementById('estab').value.trim();
+  var resp = document.getElementById('responsavel').value;
+  var descBase = document.getElementById('desc').value.trim();
+  var faltando = [];
+  if(!data) faltando.push('Data');
+  if(!vTotal) faltando.push('Valor');
+  if(!cat) faltando.push('Categoria');
+  if(!conta) faltando.push('Conta');
+  if(!estab) faltando.push('Estabelecimento');
+  if(!resp) faltando.push('Responsável');
+  if(faltando.length>0){ var el=document.getElementById('erroForm'); el.textContent='⚠️ Preencha: '+faltando.join(', '); el.style.display='block'; return; }
+  document.getElementById('erroForm').style.display='none';
+  // Divide o total, ajusta centavos na última parcela para não perder 1 centavo
+  var valorParc = Math.floor((vTotal / nParc) * 100) / 100;
+  var resto = Math.round((vTotal - valorParc * nParc) * 100) / 100;
+  var baseDate = new Date(data + 'T12:00:00');
+  var grupoId = String(Date.now());
+  var novos = [];
+  for(var i=0;i<nParc;i++){
+    var d = new Date(baseDate.getFullYear(), baseDate.getMonth() + i, Math.min(baseDate.getDate(), 28));
+    // Mantém dia 29,30,31 quando o mês tem, senão usa último dia do mês
+    var ultimoDia = new Date(d.getFullYear(), d.getMonth()+1, 0).getDate();
+    var diaFinal = Math.min(baseDate.getDate(), ultimoDia);
+    d = new Date(d.getFullYear(), d.getMonth(), diaFinal);
+    var iso = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    var valorFinal = (i === nParc - 1) ? Math.round((valorParc + resto) * 100) / 100 : valorParc;
+    var descFinal = '';
+    if(nParc > 1){
+      descFinal = 'Parcela ' + (i+1) + '/' + nParc + ' de ' + fmt(vTotal) + (descBase ? ' - ' + descBase : '');
+    } else {
+      descFinal = descBase || 'Sem descrição';
+    }
+    var g = {id: grupoId + '-' + (i+1), valor: valorFinal, cat: cat, resp: resp, data: d.toLocaleDateString('pt-BR'), dataISO: iso, estab: estab, conta: conta, desc: descFinal, status: 'pendente', parcelaGrupo: grupoId};
+    novos.push(g);
+    if(i===0) ultimoId = g.id;
+  }
+  // Coloca as parcelas em ordem no topo
+  gastos = novos.concat(gastos);
+  try{ localStorage.setItem('gastos_off', JSON.stringify(gastos)); }catch(e){}
+  document.getElementById('valor').value='';
+  document.getElementById('estab').value='';
+  document.getElementById('desc').value='';
+  document.getElementById('responsavel').value='';
+  document.getElementById('parcelas').value='1';
+  atualizarPreviewParc();
+  fecharModal(); showTab('visao'); atualizar();
+  if(nParc > 1) showToast('✅ Salvo! ' + nParc + 'x de ' + fmt(valorParc) + ' - ' + estab);
+  else showToast('✅ Salvo! '+estab+' - '+fmt(vTotal));
+  setTimeout(function(){ var card=document.getElementById('cardLista'); if(card) card.scrollIntoView({behavior:'smooth'}); }, 150);
+  sincronizar(true);
+}
 function filtrar(){ var cat = document.getElementById('filtroCat').value; return gastos.filter(function(g){ var okMes = (filtroMes==='Todos' || getMesDe(g)===filtroMes); var okResp = (filtroResp==='Todos' || g.resp===filtroResp); var okCat = (cat==='Todas' || g.cat===cat); return okMes && okResp && okCat; }); }
 function filtrarMesResp(){ return gastos.filter(function(g){ return (filtroMes==='Todos' || getMesDe(g)===filtroMes); }); }
 function somaPorRespMes(resp){ var s=0; filtrarMesResp().forEach(function(g){ if(g.resp===resp) s+=Number(g.valor); }); return s; }
