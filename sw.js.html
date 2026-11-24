@@ -1,13 +1,14 @@
-var CACHE = 'meu-controle-v6';
+var CACHE = 'meu-controle-v7';
 var ARQUIVOS = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', function(e) {
   e.waitUntil(
     caches.open(CACHE).then(function(cache) {
       return cache.addAll(ARQUIVOS);
+    }).then(function() {
+      return self.skipWaiting();
     })
   );
-  self.skipWaiting();
 });
 
 self.addEventListener('activate', function(e) {
@@ -16,23 +17,48 @@ self.addEventListener('activate', function(e) {
       return Promise.all(keys.map(function(k) {
         if (k !== CACHE) return caches.delete(k);
       }));
+    }).then(function() {
+      return self.clients.claim();
     })
   );
-  self.clients.claim();
 });
 
 self.addEventListener('fetch', function(e) {
+  // Navegação: usa o cache primeiro, não tenta internet primeiro
   if (e.request.mode === 'navigate') {
     e.respondWith(
-      fetch(e.request).catch(function() {
-        return caches.match('./index.html');
+      caches.match('./index.html').then(function(cached) {
+        if (cached) {
+          // Atualiza em segundo plano se tiver internet, mas já abre do cache
+          fetch(e.request).then(function(res) {
+            if (res && res.ok) {
+              caches.open(CACHE).then(function(cache) {
+                cache.put('./index.html', res.clone());
+              });
+            }
+          }).catch(function(){});
+          return cached;
+        }
+        // Se não tem cache, tenta internet
+        return fetch(e.request);
       })
     );
     return;
   }
+  // Outros arquivos: cache primeiro
   e.respondWith(
     caches.match(e.request).then(function(resposta) {
-      return resposta || fetch(e.request);
+      return resposta || fetch(e.request).then(function(res) {
+        if (res && res.ok) {
+          var clone = res.clone();
+          caches.open(CACHE).then(function(cache) {
+            cache.put(e.request, clone);
+          });
+        }
+        return res;
+      });
+    }).catch(function() {
+      return caches.match('./index.html');
     })
   );
 });
